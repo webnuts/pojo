@@ -1,5 +1,5 @@
 {
-  "name": "pojo-fabric",
+  "name": "pojo",
   "version": "0.0.1",
   "description": "Dependency Injection Mananger",
   "main": "dist/main.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:webnuts/pojo-fabric.git"
+    "url": "git@github.com:webnuts/pojo.git"
   },
   "author": "jacob@webnuts.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/webnuts/pojo-fabric/issues"
+    "url": "https://github.com/webnuts/pojo/issues"
   },
-  "homepage": "https://github.com/webnuts/pojo-fabric",
+  "homepage": "https://github.com/webnuts/pojo",
   "dependencies": {},
   "devDependencies": {
     "babel": "^5.5.6",

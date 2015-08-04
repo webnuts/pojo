@@ -1,0 +1,29 @@
+{
+  "name": "pojo-fabric",
+  "version": "0.0.1",
+  "description": "Dependency Injection Mananger",
+  "main": "dist/main.js",
+  "scripts": {
+    "compile": "rm -rf dist/* && babel --modules common src --out-dir dist && uglifyjs dist/* -c -m -o dist/*",
+    "debug": "rm -rf dist/* && babel --source-maps-inline --modules common src --out-dir dist",
+    "test": "npm run compile && babel-node test/main.js | tap-spec",
+    "prepublish": "npm run compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:webnuts/pojo-fabric.git"
+  },
+  "author": "jacob@webnuts.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/webnuts/pojo-fabric/issues"
+  },
+  "homepage": "https://github.com/webnuts/pojo-fabric",
+  "dependencies": {},
+  "devDependencies": {
+    "babel": "^5.5.6",
+    "redtape": "^1.0.0",
+    "tap-spec": "^2.2.2",
+    "tape": "^3.5.0"
+  }
+}

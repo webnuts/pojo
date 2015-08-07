@@ -62,7 +62,7 @@ export default class Pojo {
     }
   }
 
-  addDependency(factoryOrObject, options) {
+  addDependency(constructorOrFactoryOrObject, options) {
     let dependency = merge.recursive({scope: 'prototype', mixins: []}, options || {})
 
     if (['singleton', 'prototype'].indexOf(dependency.scope) === -1) {
@@ -70,20 +70,20 @@ export default class Pojo {
     }
 
     let baseFactory = null
-    switch(typeof(factoryOrObject || 'ignoreNull')) {
+    switch(typeof(constructorOrFactoryOrObject || 'ignoreNull')) {
       case 'function': {
-        if (factoryOrObject.name.length === 0) {
-          baseFactory = () => factoryOrObject()
+        if (constructorOrFactoryOrObject.name.length === 0) {
+          baseFactory = () => constructorOrFactoryOrObject()
         } else {
           if (dependency.name == null) {
-            dependency.name = factoryOrObject.name
+            dependency.name = constructorOrFactoryOrObject.name
           } 
-          baseFactory = () => new factoryOrObject()
+          baseFactory = () => new constructorOrFactoryOrObject()
         }
         break
       }
       case 'object': {
-        baseFactory = () => merge({}, factoryOrObject) // clone
+        baseFactory = () => merge({}, constructorOrFactoryOrObject) // clone
         break
       }
       default: {
@@ -160,11 +160,6 @@ export default class Pojo {
 
   dispose() {
     this.disposableObjects.forEach(disposableObject => disposableObject.dispose())
-  }
-
-  extendWithMixin(target, mixin) {
-    Object.defineProperties(target, this.getPropertiesObject(mixin))
-    return target
   }
 
   getPropertiesObject(mixin) {

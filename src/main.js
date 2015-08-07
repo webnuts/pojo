@@ -187,6 +187,7 @@ export default class Pojo {
     while(this.disposableObjects.length) {
       this.disposableObjects.pop().dispose()
     }
+    return this
   }
 
   getPropertiesObject(mixin) {

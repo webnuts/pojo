@@ -80,7 +80,7 @@ export default class Pojo {
     if (this.isDisposed) {
       throwIsDisposed()
     }
-    for(let index = this.dependencies - 1; index--; ) {
+    for(let index = this.dependencies.length - 1; index--; ) {
       if (this.dependencies[index].name === name) {
         this.dependencies.splice(index, 1)
       }

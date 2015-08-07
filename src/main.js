@@ -92,6 +92,9 @@ export default class Pojo {
   }
 
   addDecorator(constructorOrFunction, options) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     let decorator = merge.recursive({mixins: []}, options || {})
     if (typeof(constructorOrFunction) !== 'function') {
       throwInvalidDecorator()
@@ -143,6 +146,9 @@ export default class Pojo {
   }
 
   extendWithDecorator(target, decoratorName) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     this.decorators.filter(decorator => decorator.name === decoratorName).forEach(decorator => decorator.factory(target))
     return this
   }

@@ -6,6 +6,7 @@ let throwInvalidScope = (name) => { throw new Error('Invalid scope: ' + name) }
 let throwInvalidFactoryOrObject = () => { throw new Error('A dependency must be a function or an object.') }
 let throwDependencyWithoutName = () => { throw new Error('Cannot add a dependency without a name. Use a named function (class) or use option {name: "SomeName"}.') }
 let throwInvalidMixinType = () => { throw new Error('Invalid mixin type: ' + mixinType) }
+let throwIsDisposed = () => { throw new Error('The Pojo object has been disposed. Create a new Pojo object.') }
 
 export default class Pojo {
   constructor(config, parent) {
@@ -14,24 +15,36 @@ export default class Pojo {
     this.childContainers = []
     this.dependencies = []
     this.disposableObjects = []
+    this.isDisposed = false
   }
 
   getObject(dependencyName) {
-    let matchingDependencies = this.getDependencies(dependencyName)
-    if (matchingDependencies.length === 0) {
-      throwNoDependencyExist(dependencyName)
-    } else if (1 < matchingDependencies.length) {
-      throwMultipleDependenciesExists(dependencyName)
-    } else {
-      return matchingDependencies[0].factory()
-    }
+    return this.getDependency(dependencyName).factory()
   }
 
   getAllObjects(dependencyName) {
     return this.getDependencies(dependencyName).map(dependency => dependency.factory())
   }
 
+  getDependency(name, returnEmptyDependency) {
+    let matchingDependencies = this.getDependencies(dependencyName)
+    if (matchingDependencies.length === 0) {
+      if (returnEmptyDependency) {
+        return {factory: () => undefined}
+      } else {
+        throwNoDependencyExist(dependencyName)
+      }
+    } else if (1 < matchingDependencies.length) {
+      throwMultipleDependenciesExists(dependencyName)
+    } else {
+      return matchingDependencies[0]
+    }
+  }
+
   getDependencies(name) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     if (name === undefined) {
       return this.dependencies.slice(0)
     } else {
@@ -40,21 +53,33 @@ export default class Pojo {
   }
 
   createChild(config) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     let container = new Pojo(config, this)
     this.childContainers.push(container)
     return container
   }
 
   addConfig(config) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     merge.recursive(this.config, config)
     return this
   }
 
   getConfigValue(key) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     return this.config[key] || this.parent == null ? undefined : this.parent.getConfigValue(key)
   }
 
   removeDependencies(name) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     for(let index = this.dependencies - 1; index--; ) {
       if (this.dependencies[index].name === name) {
         this.dependencies.splice(index, 1)
@@ -63,6 +88,10 @@ export default class Pojo {
   }
 
   addDependency(constructorOrFactoryOrObject, options) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
+
     let dependency = merge.recursive({scope: 'prototype', mixins: []}, options || {})
 
     if (['singleton', 'prototype'].indexOf(dependency.scope) === -1) {
@@ -114,6 +143,9 @@ export default class Pojo {
   }
 
   registerDisposableObject(target) {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     if (typeof(target.dispose) === 'function') {
       this.disposableObjects.push(target)
     }
@@ -126,11 +158,7 @@ export default class Pojo {
   }
 
   extendWithMixin(target, mixinName) {
-    let dependency = this.dependencies[mixinName]
-    if (dependency == null) {
-      throwNoDependencyExist(mixinName)
-    }
-    let mixinObject = dependency.factory()
+    let mixinObject = this.getDependency(mixinName).factory()
     let mixinPropertiesObject = this.getPropertiesObject(mixinObject)
     Object.defineProperties(target, mixinPropertiesObject)
     return this
@@ -140,10 +168,7 @@ export default class Pojo {
     let container = this
     Object.keys(target).forEach(propertyName => {
       if (target[propertyName] == null) {
-        let {factory} = container.dependencies[propertyName] || {}
-        if (factory) {
-          target[propertyName] = factory()
-        }
+        target[propertyName] = container.getDependency(propertyName, true).factory()
       }
     })
     return this
@@ -159,7 +184,9 @@ export default class Pojo {
   }
 
   dispose() {
-    this.disposableObjects.forEach(disposableObject => disposableObject.dispose())
+    while(this.disposableObjects.length) {
+      this.disposableObjects.pop().dispose()
+    }
   }
 
   getPropertiesObject(mixin) {

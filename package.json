@@ -19,7 +19,9 @@
     "url": "https://github.com/webnuts/pojo/issues"
   },
   "homepage": "https://github.com/webnuts/pojo",
-  "dependencies": {},
+  "dependencies": {
+    "merge": "*"
+    },
   "devDependencies": {
     "babel": "^5.5.6",
     "redtape": "^1.0.0",

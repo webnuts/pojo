@@ -4,7 +4,10 @@ let throwNoDependencyExist = (name) => { throw new Error('No dependency exist wi
 let throwMultipleDependenciesExists = (name) => { throw new Error('Multiple dependencies exist with name "' + name + '". Use function getAllObjects(dependencyName) to retrieve multiple objects.') }
 let throwInvalidScope = (name) => { throw new Error('Invalid scope: ' + name) }
 let throwInvalidFactoryOrObject = () => { throw new Error('A dependency must be a function or an object.') }
+let throwInvalidFactory = () => { throw new Error('A decorator must be a function.') }
+let throwInvalidDecorator = () => { throw new Error('A dependency must be a function.') }
 let throwDependencyWithoutName = () => { throw new Error('Cannot add a dependency without a name. Use a named function (class) or use option {name: "SomeName"}.') }
+let throwDecoratorWithoutName = () => { throw new Error('Cannot add a decorator without a name. Use a named function (class) or use option {name: "SomeName"}.') }
 let throwInvalidMixinType = () => { throw new Error('Invalid mixin type: ' + mixinType) }
 let throwIsDisposed = () => { throw new Error('The Pojo object has been disposed. Create a new Pojo object.') }
 
@@ -14,6 +17,7 @@ export default class Pojo {
     this.parent = parent
     this.childContainers = []
     this.dependencies = []
+    this.decorators = []
     this.disposableObjects = []
     this.isDisposed = false
   }
@@ -87,12 +91,67 @@ export default class Pojo {
     }
   }
 
+  addDecorator(constructorOrFunction, options) {
+    let decorator = merge.recursive({mixins: []}, options || {})
+    if (typeof(constructorOrFunction) !== 'function') {
+      throwInvalidDecorator()
+    }
+    
+    let baseFactory = null
+    switch(typeof(constructorOrFunction || 'ignoreNull')) {
+      case 'function': {
+        if (constructorOrFunction.name.length === 0) {
+          baseFactory = constructorOrFunction
+        } else {
+          if (decorator.name == null) {
+            decorator.name = constructorOrFunction.name
+          } 
+          baseFactory = function() {
+            let target = Object.create(constructorOrFunction.prototype)
+            constructorOrFunction.apply(target, arguments)
+            return target
+          }
+        }
+        break
+      }
+      default: {
+        throwInvalidFactory()
+      }
+    }
+
+    if (decorator.name == null || decorator.name.length === 0) {
+      throwDecoratorWithoutName()
+    }
+
+    decorator.factory = () => {
+      let target = baseFactory.apply(null, arguments)
+      this.populateProperties(target)
+          .populateConfigProperty(target, decorator.name)
+          .extendWithMixins(target, decorator.mixins)
+          .registerDisposableObject(target)
+      return target
+    }
+
+    this.decorators.push(decorator)
+
+    return this
+  }
+
+  extendWithDecorators(target, decoratorNames) {
+    decoratorNames.forEach(decoratorName => this.extendWithDecorator(target, decoratorName))
+    return this
+  }
+
+  extendWithDecorator(target, decoratorName) {
+    this.decorators.filter(decorator => decorator.name === decoratorName).forEach(decorator => decorator.factory(target))
+    return this
+  }
+
   addDependency(constructorOrFactoryOrObject, options) {
     if (this.isDisposed) {
       throwIsDisposed()
     }
-
-    let dependency = merge.recursive({scope: 'prototype', mixins: []}, options || {})
+    let dependency = merge.recursive({scope: 'prototype', mixins: [], decorators: []}, options || {})
 
     if (['singleton', 'prototype'].indexOf(dependency.scope) === -1) {
       throwInvalidScope(dependency.scope)
@@ -129,6 +188,7 @@ export default class Pojo {
       this.populateProperties(target)
           .populateConfigProperty(target, dependency.name)
           .extendWithMixins(target, dependency.mixins)
+          .extendWithDecorators(target, dependency.decorators)
           .registerDisposableObject(target)
       if (dependency.scope === 'singleton') {
         dependency.singletonObject = target
@@ -153,7 +213,7 @@ export default class Pojo {
   }
 
   extendWithMixins(target, mixinNames) {
-    mixinNames.forEach(mixinName => this.extendWithMixin(mixinName))
+    mixinNames.forEach(mixinName => this.extendWithMixin(target, mixinName))
     return this
   }
 

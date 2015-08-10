@@ -23,11 +23,17 @@ test('empty container', t => {
 
 test('container with 1 prototype dependency', t => {
   let container = new Pojo({"my-dep": 'ping-pong'})
+  let constructorCount = 0
   let disposeCount = 0
   let dependencyObject = {price: 123, dispose: () => disposeCount++ }
   let factoryResult = merge.recursive(dependencyObject, {config: 'ping-pong', mixedIn: true, decorated: true})
 
-  container.addDependency(() => merge.recursive(true, dependencyObject, {}), {name: 'my-dep', decorators: ['my-decorator'], mixins: ['my-mixin']})
+  let factory = () => {
+    constructorCount++
+    return merge.recursive(true, dependencyObject, {})
+  }
+
+  container.addDependency(factory, {name: 'my-dep', decorators: ['my-decorator'], mixins: ['my-mixin']})
   container.addDependency(() => {return {mixedIn: true}}, {name: 'my-mixin'})
   container.addDecorator(target => target.decorated = true, {name: 'my-decorator'})
 
@@ -37,6 +43,7 @@ test('container with 1 prototype dependency', t => {
   container.dispose()
   t.equal(disposeCount, 2)
   t.throws(() => container.dispose())
+  t.equal(constructorCount, 2)
 
   t.end()
 })

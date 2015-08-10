@@ -1,7 +1,7 @@
 # Welcome to Pojo
 Pojo is a dependency injection manager designed for Plain Old JavaScript Objects.
 
-- [Featurelist]
+- Featurelist
     - [Services](#services)
     - [Decorator](#decorator)
     - [Mixin](#mixin)

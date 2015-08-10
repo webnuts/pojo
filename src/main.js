@@ -10,6 +10,8 @@ let throwDependencyWithoutName = () => { throw new Error('Cannot add a dependenc
 let throwDecoratorWithoutName = () => { throw new Error('Cannot add a decorator without a name. Use a named function (class) or use option {name: "SomeName"}.') }
 let throwInvalidMixinType = () => { throw new Error('Invalid mixin type: ' + mixinType) }
 let throwIsDisposed = () => { throw new Error('The Pojo object has been disposed. Create a new Pojo object.') }
+let throwDependencyCreatedNullOrUndefined = (name) => { throw new Error('Dependency "' + name + '" created null or undefined.') }
+let throwDecoratorCreatedNullOrUndefined = (name) => { throw new Error('Decorator "' + name + '" created null or undefined.') }
 
 export default class Pojo {
   constructor(config, parent) {
@@ -23,36 +25,34 @@ export default class Pojo {
   }
 
   getObject(dependencyName) {
-    return this.getDependency(dependencyName).factory()
+    let dependencyObject = this.getDependency(dependencyName).factory()
+    if (!dependencyObject) {
+      throwNoDependencyExist(dependencyName)
+    }
+    return dependencyObject
   }
 
   getAllObjects(dependencyName) {
     return this.getDependencies(dependencyName).map(dependency => dependency.factory())
   }
 
-  getDependency(name, returnEmptyDependency) {
+  getDependency(dependencyName) {
     let matchingDependencies = this.getDependencies(dependencyName)
-    if (matchingDependencies.length === 0) {
-      if (returnEmptyDependency) {
-        return {factory: () => undefined}
-      } else {
-        throwNoDependencyExist(dependencyName)
-      }
-    } else if (1 < matchingDependencies.length) {
+    if (1 < matchingDependencies.length) {
       throwMultipleDependenciesExists(dependencyName)
     } else {
-      return matchingDependencies[0]
+      return matchingDependencies[0] || {factory: () => undefined}
     }
   }
 
-  getDependencies(name) {
+  getDependencies(dependencyName) {
     if (this.isDisposed) {
       throwIsDisposed()
     }
-    if (name === undefined) {
+    if (dependencyName === undefined) {
       return this.dependencies.slice(0)
     } else {
-      return this.dependencies.filter(dependency => dependency.name === name)
+      return this.dependencies.filter(dependency => dependency.name === dependencyName)
     }
   }
 
@@ -78,17 +78,6 @@ export default class Pojo {
       throwIsDisposed()
     }
     return this.config[key] || this.parent == null ? undefined : this.parent.getConfigValue(key)
-  }
-
-  removeDependencies(name) {
-    if (this.isDisposed) {
-      throwIsDisposed()
-    }
-    for(let index = this.dependencies.length - 1; index--; ) {
-      if (this.dependencies[index].name === name) {
-        this.dependencies.splice(index, 1)
-      }
-    }
   }
 
   addDecorator(constructorOrFunction, options) {
@@ -128,6 +117,11 @@ export default class Pojo {
 
     decorator.factory = () => {
       let target = baseFactory.apply(null, arguments)
+
+      if (target == null) {
+        throwDecoratorCreatedNullOrUndefined(decorator.name)
+      }
+
       this.populateProperties(target)
           .populateConfigProperty(target, decorator.name)
           .extendWithMixins(target, decorator.mixins)
@@ -157,6 +151,10 @@ export default class Pojo {
     if (this.isDisposed) {
       throwIsDisposed()
     }
+    if (constructorOrFactoryOrObject == null) {
+      throwInvalidFactoryOrObject()
+    }
+
     let dependency = merge.recursive({scope: 'prototype', mixins: [], decorators: []}, options || {})
 
     if (['singleton', 'prototype'].indexOf(dependency.scope) === -1) {
@@ -164,10 +162,10 @@ export default class Pojo {
     }
 
     let baseFactory = null
-    switch(typeof(constructorOrFactoryOrObject || 'ignoreNull')) {
+    switch(typeof(constructorOrFactoryOrObject)) {
       case 'function': {
         if (constructorOrFactoryOrObject.name.length === 0) {
-          baseFactory = () => constructorOrFactoryOrObject()
+          baseFactory = constructorOrFactoryOrObject
         } else {
           if (dependency.name == null) {
             dependency.name = constructorOrFactoryOrObject.name
@@ -191,6 +189,11 @@ export default class Pojo {
 
     dependency.factory = (() => {
       let target = baseFactory()
+
+      if (target == null) {
+        throwDependencyCreatedNullOrUndefined(dependency.name)
+      }
+
       this.populateProperties(target)
           .populateConfigProperty(target, dependency.name)
           .extendWithMixins(target, dependency.mixins)
@@ -234,7 +237,7 @@ export default class Pojo {
     let container = this
     Object.keys(target).forEach(propertyName => {
       if (target[propertyName] == null) {
-        target[propertyName] = container.getDependency(propertyName, true).factory()
+        target[propertyName] = container.getDependency(propertyName).factory()
       }
     })
     return this
@@ -250,9 +253,13 @@ export default class Pojo {
   }
 
   dispose() {
+    if (this.isDisposed) {
+      throwIsDisposed()
+    }
     while(this.disposableObjects.length) {
       this.disposableObjects.pop().dispose()
     }
+    this.isDisposed = true
     return this
   }
 

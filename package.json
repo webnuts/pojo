@@ -1,8 +1,8 @@
 {
   "name": "pojo",
-  "version": "0.0.3",
+  "version": "0.0.7",
   "description": "Dependency Injection Mananger",
-  "main": "dist/main.js",
+  "main": "dist/container.js",
   "scripts": {
     "compile": "rm -rf dist/* && babel --modules common src --out-dir dist && uglifyjs dist/* -c -m -o dist/*",
     "debug": "rm -rf dist/* && babel --source-maps-inline --modules common src --out-dir dist",
@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/webnuts/pojo",
   "dependencies": {
-    "merge": "latest"
+    "inflected": "~1.1.6",
+    "merge": "~1.2.0"
     },
   "devDependencies": {
     "tap-spec": "latest",

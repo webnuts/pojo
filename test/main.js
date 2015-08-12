@@ -197,3 +197,22 @@ test('get multiple dependencies with the same name', t => {
   t.end()
 })
 
+test('add dependency if it doesnt exists already', t => {
+  let container = new Container()
+  container.addDependencyIfNotExists(1, {name: 'number'})
+  container.addDependencyIfNotExists(2, {name: 'number'})  
+
+  t.deepEqual(container.getAllObjects('number'), [1])
+  t.end()  
+})
+
+test('remove dependency', t => {
+  let container = new Container()
+  container.addDependency(1, {name: 'number'})
+  container.addDependency(2, {name: 'number'})
+  container.addDependency('a', {name: 'letter'})
+  container.removeDependency('number')  
+
+  t.deepEqual(container.getAllObjects('number'), [])
+  t.end()  
+})

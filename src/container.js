@@ -69,6 +69,24 @@ export default class Container {
     return dependency
   }
 
+  addDependencyIfNotExists(factoryCandidate, options) {
+    let dependency = new Dependency(factoryCandidate, options)
+    if (this.dependencies.some(dep => dep.name === dependency.name) === false) {
+      this.dependencies.push(dependency)
+    }
+    return dependency
+  }
+
+  removeDependency(dependencyName) {
+    let lastIndex = this.dependencies.length - 1
+    for(let index = lastIndex; 0 <= index; index--) {
+      if (this.dependencies[index].name === dependencyName) {
+        this.dependencies.splice(index, 1)
+      }
+    }
+    return this
+  }
+
   validate() {
     this.dependencies.forEach(dependency => dependency.validate(this))
   }

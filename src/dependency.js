@@ -32,15 +32,16 @@ export default class Dependency {
         if (factoryCandidate == null) {
           throw new Error('Cannot add null or undefined as a dependency factory.')
         }
-        if (factoryCandidate.prototype) {
-          factory = () => {
-            let product = Object.create(factoryCandidate.prototype)
-            factoryCandidate.prototype.constructor.apply(product)
-            return product
-          }
-        } else {
-          factory = () => merge.recursive(true, {}, factoryCandidate)
-        }
+        factory = () => factoryCandidate
+        // if (factoryCandidate.prototype) {
+        //   factory = () => {
+        //     let product = Object.create(factoryCandidate.prototype)
+        //     factoryCandidate.prototype.constructor.apply(product)
+        //     return product
+        //   }
+        // } else {
+        //   factory = () => merge.recursive(true, {}, factoryCandidate)
+        // }
         break
       }
       default: {
@@ -51,15 +52,16 @@ export default class Dependency {
     return new Dependency(name, factory, options)
   }
 
-  constructor(name, factory, options) {
+  constructor(name, baseFactory, options) {
     this.lifecycle = 'unique'
     merge.recursive(this, options || {})
     this.name = name
+    this.baseFactory = baseFactory
     this.factory = (function(container) {
       if (this.lifecycle === 'singleton' && this.singletonObject != null) {
         return this.singletonObject
       }
-      let dependencyObject = factory(container)
+      let dependencyObject = this.baseFactory(container)
       if (this.lifecycle === 'singleton') {
         this.singletonObject = dependencyObject
       }
@@ -72,7 +74,7 @@ export default class Dependency {
     return this
   }
 
-  // clone() {
-  //   return new Dependency(this.name, this.factory, {lifecycle: this.lifecycle})
-  // }
+  clone() {
+    return new Dependency(this.name, this.baseFactory, {lifecycle: this.lifecycle})
+  }
 }

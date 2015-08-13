@@ -1,6 +1,6 @@
 export default class Registry {
-  constructor() {
-    this.dependencies = []
+  constructor(dependencies) {
+    this.dependencies = dependencies || []
   }
 
   getDependencyName(nameOrFunction) {
@@ -61,5 +61,9 @@ export default class Registry {
     } else {
       return this.dependencies.filter(dependency => dependency.name === dependencyName)
     }
+  }
+
+  clone() {
+    return new Registry(this.dependencies.map(dep => dep.clone()))
   }
 }

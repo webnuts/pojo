@@ -9,7 +9,7 @@ export default class Pojo {
   }
 
   createContainer(configData) {
-    return new Container(this.registry, new Config(configData))
+    return new Container(this.registry.clone(), new Config(configData))
   }
 
   add() {

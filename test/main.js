@@ -164,7 +164,6 @@ test('get multiple dependencies with the same name', t => {
   pojo.add('number', 2)
   pojo.add('number', 3)
 
-
   let container = pojo.createContainer()
 
   t.deepEqual(container.getAll('number'), [1,2,3])
@@ -176,7 +175,6 @@ test('add dependency if it doesnt exists already', t => {
 
   pojo.add('number', 1)
   pojo.addIfNotExists('number', 2)
-
 
   let container = pojo.createContainer()
 
@@ -212,5 +210,27 @@ test('replace dependency', t => {
 
   t.deepEqual(container.getAll('number'), [3])
   t.deepEqual(container.getAll('letter'), ['a'])
+  t.end()
+})
+
+test('each container should have unique singletons', t => {
+  let ctorCount = 0
+  class Singleton {
+    constructor() {
+      this.count = ++ctorCount
+    }
+  }
+
+  let pojo = new Pojo()
+  pojo.addSingleton(Singleton)
+  
+  let container1 = pojo.createContainer()
+  let container2 = pojo.createContainer()
+
+  let singleton1 = container1.get(Singleton)
+  let singleton2 = container2.get(Singleton)
+
+  t.deepEqual(container1.get(Singleton), {count: 1})
+  t.deepEqual(container2.get(Singleton), {count: 2})
   t.end()
 })

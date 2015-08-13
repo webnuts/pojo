@@ -1,8 +1,8 @@
 {
   "name": "pojo",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Dependency Injection Mananger",
-  "main": "dist/container.js",
+  "main": "dist/main.js",
   "scripts": {
     "compile": "rm -rf dist/* && babel --modules common src --out-dir dist && uglifyjs dist/* -c -m -o dist/*",
     "debug": "rm -rf dist/* && babel --source-maps-inline --modules common src --out-dir dist",

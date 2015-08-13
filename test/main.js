@@ -33,7 +33,7 @@ test('container referencing dependencies', t => {
   t.end()
 })
 
-test('injecting property into dependency', t => {
+test('injecting property onto dependency', t => {
   let connectionString = 'http://127.0.0.1:80'
   class DatabaseClient {}
 
@@ -92,7 +92,7 @@ test('nested container should override config', t => {
   t.end()
 })
 
-test('parent containers singleton should be available in child container', t => {
+test('parent containers singleton should be available in nested container', t => {
   let ctorCount = 0
   class Singleton {
     constructor() {

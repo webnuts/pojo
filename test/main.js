@@ -1,6 +1,5 @@
 import Pojo from '../src/main'
 import test from 'tape'
-import merge from 'merge'
 
 test('empty container', t => {
   let pojo = new Pojo()

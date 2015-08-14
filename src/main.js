@@ -36,6 +36,18 @@ export default class Pojo {
     return this
   }
 
+  addTransient() {
+    let dependency = Dependency.parse.apply(null, arguments).asTransient()
+    this.registry.add(dependency)
+    return this
+  }
+
+  addTransientIfNotExists() {
+    let dependency = Dependency.parse.apply(null, arguments).asTransient()
+    this.registry.addIfNotExists(dependency)
+    return this
+  }
+
   replace() {
     let dependency = Dependency.parse.apply(null, arguments).asSingleton()
     this.registry.replace(dependency)

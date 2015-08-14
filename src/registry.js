@@ -66,4 +66,17 @@ export default class Registry {
   clone() {
     return new Registry(this.dependencies.map(dep => dep.clone()))
   }
+
+  createdNestedRegistry() {
+    let nestedDependencies = this.dependencies.map(dep => {
+      if (dep.lifecycle === 'singleton') {
+        return dep
+      } else if (dep.lifecycle === 'transient') {
+        return dep.clone().asSingleton()
+      } else {
+        return dep.clone()
+      }
+    })
+    return new Registry(nestedDependencies)
+  }
 }

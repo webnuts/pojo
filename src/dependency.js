@@ -60,10 +60,14 @@ export default class Dependency {
     this.factory = (function(container) {
       if (this.lifecycle === 'singleton' && this.singletonObject != null) {
         return this.singletonObject
+      // } else if (container.nested === true && this.lifecycle === 'transient' && this.transientObject != null) {
+      //   return this.transientObject
       }
       let dependencyObject = this.baseFactory(container)
       if (this.lifecycle === 'singleton') {
         this.singletonObject = dependencyObject
+      // } else if (container.nested === true && this.lifecycle === 'transient') {
+      //   this.transientObject = dependencyObject
       }
       return dependencyObject
     }).bind(this)
@@ -71,6 +75,11 @@ export default class Dependency {
 
   asSingleton() {
     this.lifecycle = 'singleton'
+    return this
+  }
+
+  asTransient() {
+    this.lifecycle = 'transient'
     return this
   }
 

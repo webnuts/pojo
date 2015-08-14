@@ -1,7 +1,8 @@
 export default class Container {
-  constructor(registry, config) {
+  constructor(registry, config, parent) {
     this.registry = registry
     this.config = config
+    this.parent = parent
   }
 
   get(nameOrFunction) {
@@ -13,6 +14,7 @@ export default class Container {
   }
 
   createNestedContainer(configData) {
-    return new Container(this.registry, this.config.createdNestedConfig(configData || {}))
+    let parent = this.parent || this
+    return new Container(parent.registry.createdNestedRegistry(), this.config.createdNestedConfig(configData || {}), parent)
   }
 }

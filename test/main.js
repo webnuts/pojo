@@ -8,8 +8,8 @@ test('empty container', t => {
   t.throws(() => container.get('unknown'))
   t.deepEqual(container.getAll(), [])
   t.deepEqual(container.getAll('unknown'), [])
-  
-  t.end()  
+
+  t.end()
 })
 
 test('container referencing dependencies', t => {
@@ -102,12 +102,12 @@ test('parent containers singleton should be available in nested container', t =>
 
   let pojo = new Pojo()
   pojo.addSingleton(Singleton)
-  
+
   let container = pojo.createContainer()
 
   let singletonObject = container.get(Singleton)
-  t.deepEqual(singletonObject, {count: 1})  
-  
+  t.deepEqual(singletonObject, {count: 1})
+
   singletonObject.test = 'abc'
   t.deepEqual(container.get(Singleton), {count: 1, test: 'abc'})
 
@@ -223,7 +223,7 @@ test('each container should have unique singletons', t => {
 
   let pojo = new Pojo()
   pojo.addSingleton(Singleton)
-  
+
   let container1 = pojo.createContainer()
   let container2 = pojo.createContainer()
 
@@ -232,5 +232,31 @@ test('each container should have unique singletons', t => {
 
   t.deepEqual(container1.get(Singleton), {count: 1})
   t.deepEqual(container2.get(Singleton), {count: 2})
+  t.end()
+})
+
+test('transient dependency should be singleton in nested container', t => {
+  let ctorCount = 0
+  class Transient {
+    constructor() {
+      this.count = ++ctorCount
+    }
+  }
+
+  let pojo = new Pojo()
+  pojo.addTransient(Transient)
+  let container = pojo.createContainer()
+  t.deepEqual(container.get(Transient), {count: 1})
+  t.deepEqual(container.get(Transient), {count: 2})
+  let nestedContainer1 = container.createNestedContainer()
+  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
+  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
+  t.deepEqual(container.get(Transient), {count: 4})
+  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
+  let nestedContainer2 = container.createNestedContainer()
+  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
+  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
+  t.deepEqual(container.get(Transient), {count: 6})
+  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
   t.end()
 })

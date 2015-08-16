@@ -266,3 +266,19 @@ test('transient dependency should be singleton in nested container', t => {
   t.deepEqual(nestedContainer3.get(Transient), {count: 7})
   t.end()
 })
+
+test('prevent "container" for being added (reserved for current container)', t => {
+  let pojo = new Pojo()
+  t.throws(() => pojo.add('container', 'test'))
+  t.end()
+})
+
+test('"container" dependency should be the current container', t => {
+  let pojo = new Pojo()
+  let container = pojo.createContainer()
+  let reference = 'my container'
+  container.label = reference
+  let foundDep = container.get('container')
+  t.equal(foundDep.label, reference)
+  t.end()
+})

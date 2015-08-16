@@ -1,5 +1,6 @@
 export default class Container {
   constructor(registry, config, parent) {
+    registry.setContainer(this)
     this.registry = registry
     this.config = config
     this.parent = parent

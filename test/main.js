@@ -280,5 +280,10 @@ test('"container" dependency should be the current container', t => {
   container.label = reference
   let foundDep = container.get('container')
   t.equal(foundDep.label, reference)
+  let nestedContainer = container.createNestedContainer()
+  let nestedReference = 'my nested container'
+  nestedContainer.label = nestedReference
+  let foundNestedDep = nestedContainer.get('container')
+  t.equal(foundNestedDep.label, nestedReference)
   t.end()
 })

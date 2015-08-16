@@ -52,7 +52,6 @@ export default class Registry {
   }
 
   get(nameOrFunction) {
-    console.log('nameOrDependency: ' + nameOrFunction)
     if (nameOrFunction === 'container') {
       return this.containerDependency
     }

@@ -52,10 +52,6 @@ export default class Registry {
   }
 
   get(nameOrFunction) {
-    if (nameOrFunction === 'container') {
-      return this.containerDependency
-    }
-
     let dependencyName = this.getDependencyName(nameOrFunction)
     let matchingDependencies = this.getAll(dependencyName)
     if (1 < matchingDependencies.length) {

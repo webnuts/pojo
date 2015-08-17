@@ -1,7 +1,7 @@
 import Registry from './registry'
 import Container from './container'
-import Config from './config'
 import Dependency from './dependency'
+import Config from './config'
 
 export default class Pojo {
   constructor() {

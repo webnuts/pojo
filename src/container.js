@@ -1,21 +1,12 @@
-export default class Container {
-  constructor(registry, config, parent) {
-    registry.setContainer(this)
-    this.registry = registry
-    this.config = config
-    this.parent = parent
-  }
+import Config from './config'
+import NestedContainer from './nested-container'
 
-  get(nameOrFunction) {
-    return this.registry.get(nameOrFunction).factory(this)
-  }
-
-  getAll(nameOrFunction) {
-    return this.registry.getAll(nameOrFunction).map(dependency => dependency.factory(this))
+export default class Container extends NestedContainer {
+  constructor(registry, config) {
+    super(registry, config)
   }
 
   createNestedContainer(configData) {
-    let parent = this.parent || this
-    return new Container(parent.registry.createdNestedRegistry(), this.config.createdNestedConfig(configData || {}), parent)
+    return new NestedContainer(this.registry.createdNestedRegistry(), this.config.createdNestedConfig(configData))
   }
 }

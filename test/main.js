@@ -92,6 +92,14 @@ test('nested container should override config', t => {
   t.end()
 })
 
+test('unknown config key should throw exception', t => {
+  let pojo = new Pojo()
+  pojo.add('unknownConfigValue', c => c.config('unknown'))
+  let container = pojo.createContainer()
+  t.throws(() => container.get('unknownConfigValue'))
+  t.end()
+})
+
 test('parent containers singleton should be available in nested container', t => {
   let ctorCount = 0
   class Singleton {
@@ -258,12 +266,7 @@ test('transient dependency should be singleton in nested container', t => {
   t.deepEqual(nestedContainer2.get(Transient), {count: 5})
   t.deepEqual(container.get(Transient), {count: 6})
   t.deepEqual(nestedContainer2.get(Transient), {count: 5})
-  let nestedContainer3 = nestedContainer2.createNestedContainer()
-  t.deepEqual(nestedContainer3.get(Transient), {count: 7})
-  t.deepEqual(nestedContainer3.get(Transient), {count: 7})
-  t.deepEqual(container.get(Transient), {count: 8})
-  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
-  t.deepEqual(nestedContainer3.get(Transient), {count: 7})
+  t.throws(() => nestedContainer2.createNestedContainer())
   t.end()
 })
 

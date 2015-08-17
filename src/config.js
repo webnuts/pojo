@@ -2,11 +2,18 @@ import merge from 'merge'
 
 export default class Config {
   constructor(data) {
-    this.data = data
+    this.data = data || {}
   }
 
   get(key) {
-    return this.data[key]
+    let value = this.data[key]
+    if (value === undefined) {
+      throw new Error('Unknown configuration key "' + key + '".')
+    }
+    if (value === null) {
+      throw new Error('Configuration key "' + key + '" has null as value.')
+    }
+    return value
   }
 
   add(data) {
@@ -18,6 +25,6 @@ export default class Config {
   }
 
   createdNestedConfig(data) {
-    return new Config(merge(true, this.data, data))
+    return new Config(merge(true, this.data, data || {}))
   }
 }

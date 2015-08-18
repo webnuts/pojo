@@ -23,8 +23,4 @@ export default class Config {
   addValue(key, value) {
     this.add({[key]: value})
   }
-
-  createdNestedConfig(data) {
-    return new Config(merge(true, this.data, data || {}))
-  }
 }

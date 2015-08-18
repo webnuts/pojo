@@ -1,12 +1,6 @@
-import Dependency from './dependency'
-
 export default class Registry {
   constructor(dependencies) {
     this.dependencies = dependencies || []
-  }
-
-  setContainer(container) {
-    this.containerDependency = Dependency.parse('container', container)
   }
 
   getDependencyName(nameOrFunction) {
@@ -24,8 +18,8 @@ export default class Registry {
   }
 
   add(dependency) {
-    if (dependency.name === 'container') {
-      throw new Error('"container" is reserved for the current container.')
+    if (dependency.name === 'container' || dependency.name === 'config') {
+      throw new Error('"' + dependency.name + '" is reserved and already available as dependencies.')
     }
     this.dependencies.push(dependency)
   }
@@ -64,10 +58,6 @@ export default class Registry {
   }
 
   getAll(nameOrFunction) {
-    if (nameOrFunction === 'container') {
-      return [this.containerDependency]
-    }
-
     let dependencyName = this.getDependencyName(nameOrFunction)
     if (dependencyName === undefined) {
       return this.dependencies.slice()
@@ -78,18 +68,5 @@ export default class Registry {
 
   clone() {
     return new Registry(this.dependencies.map(dep => dep.clone()))
-  }
-
-  createdNestedRegistry() {
-    let nestedDependencies = this.dependencies.map(dep => {
-      if (dep.lifecycle === 'singleton') {
-        return dep
-      } else if (dep.lifecycle === 'transient') {
-        return dep.clone().asSingleton()
-      } else {
-        return dep.clone()
-      }
-    })
-    return new Registry(nestedDependencies)
   }
 }

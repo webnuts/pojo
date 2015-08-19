@@ -1,6 +1,6 @@
 {
   "name": "pojo",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Dependency Injection Mananger",
   "main": "dist/main.js",
   "scripts": {
@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/webnuts/pojo",
   "dependencies": {
-    "inflected": "~1.1.6",
     "merge": "~1.2.0"
     },
   "devDependencies": {

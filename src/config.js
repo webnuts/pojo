@@ -5,6 +5,10 @@ export default class Config {
     this.data = data || {}
   }
 
+  try(key) {
+    return this.data[key]
+  }
+
   get(key) {
     let value = this.data[key]
     if (value === undefined) {

@@ -3,16 +3,16 @@ export default class Constructor {
     this.container = container
   }
 
+  get config() {
+    return this.container.config
+  }
+
   get(nameOrFunction) {
     return this.container.get(nameOrFunction)
   }
 
   getAll(nameOrFunction) {
     return this.container.getAll(nameOrFunction)
-  }
-
-  config(key) {
-    return this.container.config.get(key)
   }
 
   extend(target, nameOrCtorFunctionOrObject) {

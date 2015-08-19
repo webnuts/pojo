@@ -1,5 +1,4 @@
 import Registry from './registry'
-import Config from './config'
 import NestedContainer from './nested-container'
 import merge from 'merge'
 
@@ -8,7 +7,7 @@ export default class Container extends NestedContainer {
     super(registry, config)
   }
 
-  createNestedContainer(configData) {
+  createNestedContainer(config) {
     let nestedDependencies = this.registry.dependencies.map(dep => {
       if (dep.lifecycle === 'singleton') {
         return dep
@@ -19,8 +18,8 @@ export default class Container extends NestedContainer {
       }
     })
 
-    let nestedConfigData = merge.recursive(true, this.config.data, configData || {})
+    let nestedConfig = merge.recursive(true, this.config, config || {})
 
-    return new NestedContainer(new Registry(nestedDependencies), new Config(nestedConfigData))
+    return new NestedContainer(new Registry(nestedDependencies), nestedConfig)
   }
 }

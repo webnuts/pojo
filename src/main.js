@@ -1,15 +1,14 @@
 import Registry from './registry'
 import Container from './container'
 import Dependency from './dependency'
-import Config from './config'
 
 export default class Pojo {
   constructor() {
     this.registry = new Registry()
   }
 
-  createContainer(configData) {
-    return new Container(this.registry.clone(), new Config(configData))
+  createContainer(config) {
+    return new Container(this.registry.clone(), config || {})
   }
 
   add() {

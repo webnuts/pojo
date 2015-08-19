@@ -1,5 +1,4 @@
 import Registry from './registry'
-import Config from './config'
 
 export default class NestedContainer {
   constructor(registry, config) {

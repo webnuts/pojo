@@ -78,7 +78,7 @@ test('extending dependency with mixin', t => {
 
 test('nested container should override config', t => {
   let pojo = new Pojo()
-  pojo.add('test', c => [c.config['value1'], c.config['value2']])
+  pojo.add('test', c => c.config.get('value1', 'value2'))
   let container = pojo.createContainer({value1: 'a', value2: 'b'})
 
   let test1 = container.get('test')
@@ -92,9 +92,17 @@ test('nested container should override config', t => {
   t.end()
 })
 
-test('unknown config key should return undefined', t => {
+test('getting unknown config key should throw error', t => {
   let pojo = new Pojo()
-  pojo.add('unknownConfigValue', c => c.config['unknown'])
+  pojo.add('unknownConfigValue', c => c.config.get('unknown'))
+  let container = pojo.createContainer()
+  t.throws(() => container.get('unknownConfigValue'))
+  t.end()
+})
+
+test('try getting unknown config key should return undefined', t => {
+  let pojo = new Pojo()
+  pojo.add('unknownConfigValue', c => c.config.try('unknown'))
   let container = pojo.createContainer()
   t.equal(container.get('unknownConfigValue'), undefined)
   t.end()
@@ -135,7 +143,7 @@ test('inject config into dependency constructor', t => {
 
   let pojo = new Pojo()
 
-  pojo.add('databaseClient', c => new DatabaseClient(c.config['connectionString']))
+  pojo.add('databaseClient', c => new DatabaseClient(c.config.get('connectionString')))
 
   let container = pojo.createContainer({connectionString: connectionString})
   let databaseClient = container.get('databaseClient')

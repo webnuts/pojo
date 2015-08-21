@@ -1,9 +1,11 @@
+import merge from 'merge'
 import Registry from './registry'
+import Config from './config'
 
 export default class NestedContainer {
-  constructor(registry, config) {
+  constructor(registry, configData) {
     this.registry = registry
-    this.config = config
+    this.config = new Config(configData)
   }
 
   get(nameOrFunction) {
@@ -11,7 +13,7 @@ export default class NestedContainer {
       return this
     }
     if (nameOrFunction === 'config') {
-      return this.config
+      return merge({}, this.config.data)
     }
     return this.registry.get(nameOrFunction).factory(this)
   }
@@ -21,7 +23,7 @@ export default class NestedContainer {
       return [this]
     }
     if (nameOrFunction === 'config') {
-      return [this.config]
+      return [merge({}, this.config.data)]
     }
     return this.registry.getAll(nameOrFunction).map(dependency => dependency.factory(this))
   }

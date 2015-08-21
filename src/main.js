@@ -7,8 +7,8 @@ export default class Pojo {
     this.registry = new Registry()
   }
 
-  createContainer(config) {
-    return new Container(this.registry.clone(), config || {})
+  createContainer(configData) {
+    return new Container(this.registry.clone(), configData || {})
   }
 
   add() {

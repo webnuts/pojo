@@ -1,6 +1,6 @@
 {
   "name": "pojo",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "Dependency Injection Mananger",
   "main": "dist/main.js",
   "scripts": {

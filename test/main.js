@@ -82,12 +82,12 @@ test('nested container should override config', t => {
   let container = pojo.createContainer({value1: 'a', value2: 'b'})
 
   let test1 = container.get('test')
-  t.deepEqual(test1, ['a', 'b'])
+  t.deepEqual(test1, {value1: 'a', value2: 'b'})
 
   let nestedContainer = container.createNestedContainer({value2: 'c'})
 
   let test2 = nestedContainer.get('test')
-  t.deepEqual(test2, ['a', 'c'])
+  t.deepEqual(test2, {value1: 'a', value2: 'c'})
 
   t.end()
 })
@@ -304,5 +304,18 @@ test('"config" dependency should be current containers config data', t => {
   let config = {a:1, b:2}
   let container = pojo.createContainer(config)
   t.deepEqual(container.get('config'), config)
+  t.end()
+})
+
+test('trying getting config should return default values', t => {
+  let pojo = new Pojo()
+  let config = {a:{b:2}}
+  pojo.add('conf1', c => c.config.tryOrDefault(1, 'z'))
+  pojo.add('conf2', c => c.config.tryOrDefault({c:3}, 'a'))
+  pojo.add('conf3', c => c.config.tryOrDefault({c:3}, 'b'))
+  let container = pojo.createContainer(config)
+  t.equal(container.get('conf1'), 1)
+  t.deepEqual(container.get('conf2'), {b:2})
+  t.deepEqual(container.get('conf3'), {c:3})
   t.end()
 })

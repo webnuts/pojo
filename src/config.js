@@ -7,19 +7,27 @@ export default class Config {
 
   try(...keys) {
     if (keys.length === 0) {
-      return merge(true, this.data, {})
+      return merge(true, {}, this.data)
     } else if (keys.length === 1) {
       return this.data[keys[0]]
     } else {
-      return keys.map(key => this.data[key])
+      return keys.reduce((result, key) => {
+        result[key] = this.data[key]
+        return result
+      }, {})
     }
+  }
+
+  tryOrDefault(defaultValue, ...keys) {
+    let result = this.try.apply(this, keys)
+    return result == null ? defaultValue : result
   }
 
   get(...keys) {
     if (keys.length === 0) {
       return merge(true, this.data, {})
     } else {
-      let result = keys.map(key => {
+      let result = keys.reduce((result, key) => {
         let value = this.data[key]
         if (value === undefined) {
           throw new Error('Unknown configuration key "' + key + '".')
@@ -27,10 +35,11 @@ export default class Config {
         if (value === null) {
           throw new Error('Configuration key "' + key + '" has null as value.')
         }
-        return value
-      })
+        result[key] = value
+        return result
+      }, {})
       if (keys.length === 1) {
-        return result[0]
+        return result[keys[0]]
       } else {
         return result
       }

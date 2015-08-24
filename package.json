@@ -1,10 +1,10 @@
 {
   "name": "pojo",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Dependency Injection Mananger",
   "main": "dist/main.js",
   "scripts": {
-    "compile": "rm -rf dist/* && babel --modules common src --out-dir dist && uglifyjs dist/* -c -m -o dist/*",
+    "compile": "rm -rf dist/* && babel --modules common src --out-dir dist",
     "debug": "rm -rf dist/* && babel --source-maps-inline --modules common src --out-dir dist",
     "test": "npm run debug && babel-node test/main.js | tap-spec",
     "prepublish": "npm run compile"

@@ -328,3 +328,19 @@ test('try getting dependency', t => {
   t.equal(container.try('test'), 'test')
   t.end()
 })
+
+test('try getting nested config', t => {
+  let pojo = new Pojo()
+  pojo.add('test', c => c.config.try('a.b.c'))
+  let container = pojo.createContainer({a: {b: {c: 123}}})
+  t.equal(container.get('test'), 123)
+  t.end()
+})
+
+test('get nested config', t => {
+  let pojo = new Pojo()
+  pojo.add('test', c => c.config.get('a.b.c'))
+  let container = pojo.createContainer({a: {b: {c: 123}}})
+  t.equal(container.get('test'), 123)
+  t.end()
+})

@@ -1,5 +1,15 @@
 import merge from 'merge'
 
+function walk(obj, path) {
+  if (path) {
+    let keys = path.split('.')
+    while (keys.length && obj !== undefined) {
+      obj = obj[keys.shift()]
+    }
+  }
+  return obj
+}
+
 export default class Config {
   constructor(data) {
     this.data = data || {}
@@ -9,10 +19,11 @@ export default class Config {
     if (keys.length === 0) {
       return merge(true, {}, this.data)
     } else if (keys.length === 1) {
-      return this.data[keys[0]]
+      return walk(this.data, keys[0])
+      //return this.data[keys[0]]
     } else {
       return keys.reduce((result, key) => {
-        result[key] = this.data[key]
+        result[key] = walk(this.data, key)
         return result
       }, {})
     }
@@ -28,7 +39,7 @@ export default class Config {
       return merge(true, this.data, {})
     } else {
       let result = keys.reduce((result, key) => {
-        let value = this.data[key]
+        let value = walk(this.data, key)
         if (value === undefined) {
           throw new Error('Unknown configuration key "' + key + '".')
         }

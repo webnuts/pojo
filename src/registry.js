@@ -45,16 +45,21 @@ export default class Registry {
     }
   }
 
-  get(nameOrFunction) {
+  try(nameOrFunction) {
     let dependencyName = this.getDependencyName(nameOrFunction)
     let matchingDependencies = this.getAll(dependencyName)
     if (1 < matchingDependencies.length) {
       throw new Error('Multiple dependencies exists with name "' + dependencyName + '".')
-    } else if (matchingDependencies.length === 0) {
-      throw new Error('No dependency exists with name "' + dependencyName + "'.")
-    } else {
-      return matchingDependencies[0]
     }
+    return matchingDependencies[0]
+  }
+
+  get(nameOrFunction) {
+    let dependency = this.try(nameOrFunction)
+    if (dependency === undefined) {
+      throw new Error('No dependency exists with name "' + dependencyName + "'.")
+    }
+    return dependency
   }
 
   getAll(nameOrFunction) {

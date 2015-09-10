@@ -8,6 +8,19 @@ export default class NestedContainer {
     this.config = new Config(configData)
   }
 
+  try(nameOrFunction) {
+    if (nameOrFunction === 'container') {
+      return this
+    }
+    if (nameOrFunction === 'config') {
+      return merge({}, this.config.data)
+    }
+    let dependency = this.registry.try(nameOrFunction)
+    if (dependency) {
+      return dependency.factory(this)
+    }
+  }
+
   get(nameOrFunction) {
     if (nameOrFunction === 'container') {
       return this

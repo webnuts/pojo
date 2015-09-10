@@ -319,3 +319,12 @@ test('trying getting config should return default values', t => {
   t.deepEqual(container.get('conf3'), {c:3})
   t.end()
 })
+
+test('try getting dependency', t => {
+  let pojo = new Pojo()
+  pojo.add('test', c => 'test')
+  let container = pojo.createContainer()
+  t.equal(container.try('bla'), undefined)
+  t.equal(container.try('test'), 'test')
+  t.end()
+})

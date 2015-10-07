@@ -2,19 +2,15 @@ import Pojo from '../src/main'
 import test from 'tape'
 import Promise from 'bluebird'
 
-require("babel/polyfill")
-
 test('empty container', t => {
   let pojo = new Pojo()
   let container = pojo.createContainer()
 
-  let task = async function() {
-    t.deepEqual(await container.getAll(), [])
-    t.deepEqual(await container.getAll('unknown'), [])
-    container.get('unknown').catch(t.throws)
-  }
+  return Promise.all([container.getAll(), container.getAll('unknown')]).then(([all1, all2]) => {
 
-  return Promise.resolve(task()).then(t.end).catch(t.end)
+  }).then(() => {
+    return container.get('unknown')
+  }).catch(t.throws).then(t.end)
 })
 
 test('container referencing dependencies', t => {

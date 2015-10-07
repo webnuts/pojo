@@ -55,7 +55,8 @@ export default class Registry {
   }
 
   get(nameOrFunction) {
-    let dependency = this.try(nameOrFunction)
+    let dependencyName = this.getDependencyName(nameOrFunction)
+    let dependency = this.try(dependencyName)
     if (dependency === undefined) {
       throw new Error('No dependency exists with name "' + dependencyName + "'.")
     }

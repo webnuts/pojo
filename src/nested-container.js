@@ -1,6 +1,7 @@
-import merge from 'merge'
 import Registry from './registry'
 import Config from './config'
+import Promise from 'bluebird'
+import deasync from 'deasync'
 
 export default class NestedContainer {
   constructor(registry, configData) {
@@ -8,36 +9,49 @@ export default class NestedContainer {
     this.config = new Config(configData)
   }
 
-  try(nameOrFunction) {
-    if (nameOrFunction === 'container') {
-      return this
-    }
-    if (nameOrFunction === 'config') {
-      return merge({}, this.config.data)
-    }
-    let dependency = this.registry.try(nameOrFunction)
-    if (dependency) {
-      return dependency.factory(this)
-    }
+  try(nameOrFunction, callback) {
+    let container = this
+    return Promise.try(() => {
+      if (nameOrFunction === 'container') {
+        return container
+      }
+      if (nameOrFunction === 'config') {
+        return container.config
+      }
+      let dependency = container.registry.try(nameOrFunction)
+      if (dependency) {
+        return dependency.factory(container)
+      }
+    }).nodeify(callback)
   }
 
-  get(nameOrFunction) {
-    if (nameOrFunction === 'container') {
-      return this
-    }
-    if (nameOrFunction === 'config') {
-      return merge({}, this.config.data)
-    }
-    return this.registry.get(nameOrFunction).factory(this)
+  get(nameOrFunction, callback) {
+    let container = this
+    return Promise.try(() => {
+      if (nameOrFunction === 'container') {
+        return container
+      }
+      if (nameOrFunction === 'config') {
+        return container.config
+      }
+      return container.registry.get(nameOrFunction).factory(container)
+    }).nodeify(callback)
   }
 
-  getAll(nameOrFunction) {
-    if (nameOrFunction === 'container') {
-      return [this]
-    }
-    if (nameOrFunction === 'config') {
-      return [merge({}, this.config.data)]
-    }
-    return this.registry.getAll(nameOrFunction).map(dependency => dependency.factory(this))
+  getAll(nameOrFunction, callback) {
+    let container = this
+    return Promise.try(() => {
+      if (nameOrFunction === 'container') {
+        return [container]
+      }
+      if (nameOrFunction === 'config') {
+        return [container.config]
+      }
+      return Promise.all(container.registry.getAll(nameOrFunction).map(dependency => dependency.factory(container)))
+    }).nodeify(callback)
   }
 }
+
+NestedContainer.prototype.trySync = deasync(NestedContainer.prototype.try)
+NestedContainer.prototype.getSync = deasync(NestedContainer.prototype.get)
+NestedContainer.prototype.getAllSync = deasync(NestedContainer.prototype.getAll)

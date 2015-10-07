@@ -1,5 +1,4 @@
 import merge from 'merge'
-import Constructor from './constructor'
 
 export default class Dependency {
   static parse(...args) {
@@ -22,7 +21,7 @@ export default class Dependency {
     switch(typeof(factoryCandidate)) {
       case 'function': {
         if (factoryCandidate.name.length === 0) {
-          factory = container => factoryCandidate(new Constructor(container))
+          factory = container => factoryCandidate(container)
         } else {
           factory = () => new factoryCandidate()
         }
@@ -33,15 +32,6 @@ export default class Dependency {
           throw new Error('Cannot add null or undefined as a dependency factory.')
         }
         factory = () => factoryCandidate
-        // if (factoryCandidate.prototype) {
-        //   factory = () => {
-        //     let product = Object.create(factoryCandidate.prototype)
-        //     factoryCandidate.prototype.constructor.apply(product)
-        //     return product
-        //   }
-        // } else {
-        //   factory = () => merge.recursive(true, {}, factoryCandidate)
-        // }
         break
       }
       default: {

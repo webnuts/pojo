@@ -1,15 +1,20 @@
 import Pojo from '../src/main'
 import test from 'tape'
+import Promise from 'bluebird'
+
+require("babel/polyfill")
 
 test('empty container', t => {
   let pojo = new Pojo()
   let container = pojo.createContainer()
 
-  t.throws(() => container.get('unknown'))
-  t.deepEqual(container.getAll(), [])
-  t.deepEqual(container.getAll('unknown'), [])
+  let task = async function() {
+    t.deepEqual(await container.getAll(), [])
+    t.deepEqual(await container.getAll('unknown'), [])
+    container.get('unknown').catch(t.throws)
+  }
 
-  t.end()
+  return Promise.resolve(task()).then(t.end).catch(t.end)
 })
 
 test('container referencing dependencies', t => {
@@ -23,14 +28,14 @@ test('container referencing dependencies', t => {
 
   let pojo = new Pojo()
   pojo.add('connectionString', connectionString)
-  pojo.add('databaseClient', c => new DatabaseClient(c.get('connectionString')))
+  pojo.add('databaseClient', c => c.get('connectionString').then(connStr => new DatabaseClient(connStr)))
 
   let container = pojo.createContainer()
 
-  let databaseClient = container.get('databaseClient')
-
-  t.equal(databaseClient.connectionString, connectionString)
-  t.end()
+  return container.get('databaseClient').then(dbClient => {
+    t.equal(dbClient.connectionString, connectionString)
+    t.end()
+  })
 })
 
 test('injecting property onto dependency', t => {
@@ -41,39 +46,17 @@ test('injecting property onto dependency', t => {
   pojo.add('connectionString', connectionString)
   pojo.add('databaseClient', c => {
     let client = new DatabaseClient()
-    client.connectionString = c.get('connectionString')
-    return client
+    return c.get('connectionString').then(connStr => {
+      client.connectionString = connStr
+      return client
+    })
   })
 
   let container = pojo.createContainer()
-  let databaseClient = container.get('databaseClient')
-
-  t.equal(databaseClient.connectionString, connectionString)
-  t.end()
-})
-
-test('extending dependency with mixin', t => {
-  let connectionString = 'http://127.0.0.1:80'
-  class ConnectionString {
-    constructor() {
-      this.connectionString = connectionString
-    }
-  }
-  class DatabaseClient {}
-
-  let pojo = new Pojo()
-  pojo.add(ConnectionString)
-  pojo.add('databaseClient', c => {
-    let client = new DatabaseClient()
-    c.extend(client, ConnectionString)
-    return client
+  return container.get('databaseClient').then(dbClient => {
+    t.equal(dbClient.connectionString, connectionString)
+    t.end()
   })
-
-  let container = pojo.createContainer()
-  let databaseClient = container.get('databaseClient')
-
-  t.equal(databaseClient.connectionString, connectionString)
-  t.end()
 })
 
 test('nested container should override config', t => {
@@ -81,31 +64,36 @@ test('nested container should override config', t => {
   pojo.add('test', c => c.config.get('value1', 'value2'))
   let container = pojo.createContainer({value1: 'a', value2: 'b'})
 
-  let test1 = container.get('test')
-  t.deepEqual(test1, {value1: 'a', value2: 'b'})
-
-  let nestedContainer = container.createNestedContainer({value2: 'c'})
-
-  let test2 = nestedContainer.get('test')
-  t.deepEqual(test2, {value1: 'a', value2: 'c'})
-
-  t.end()
+  return container.get('test').then(test1 => {
+    t.deepEqual(test1, {value1: 'a', value2: 'b'})
+    return container.createNestedContainer({value2: 'c'}).then(nestedContainer => {
+      return nestedContainer.get('test').then(test2 => {
+        t.deepEqual(test2, {value1: 'a', value2: 'c'})
+        t.end()
+      })
+    })
+  })
 })
 
 test('getting unknown config key should throw error', t => {
   let pojo = new Pojo()
   pojo.add('unknownConfigValue', c => c.config.get('unknown'))
   let container = pojo.createContainer()
-  t.throws(() => container.get('unknownConfigValue'))
-  t.end()
+  return container.get('unknownConfigValue').catch(t.throws).then(t.end)
 })
 
 test('try getting unknown config key should return undefined', t => {
   let pojo = new Pojo()
-  pojo.add('unknownConfigValue', c => c.config.try('unknown'))
+  pojo.add('unknownConfigValue', c => {
+    return c.get('config').then(config => {
+      return config.try('unknown')
+    })
+  })
   let container = pojo.createContainer()
-  t.equal(container.get('unknownConfigValue'), undefined)
-  t.end()
+  return container.get('unknownConfigValue').then(unknownConfigValue => {
+    t.equal(unknownConfigValue, undefined)
+    t.end()
+  })
 })
 
 test('parent containers singleton should be available in nested container', t => {
@@ -121,15 +109,21 @@ test('parent containers singleton should be available in nested container', t =>
 
   let container = pojo.createContainer()
 
-  let singletonObject = container.get(Singleton)
-  t.deepEqual(singletonObject, {count: 1})
+  return container.get(Singleton).then(singletonObject1 => {
+    t.deepEqual(singletonObject1, {count: 1})
+    singletonObject1.test = 'abc'
 
-  singletonObject.test = 'abc'
-  t.deepEqual(container.get(Singleton), {count: 1, test: 'abc'})
+    return container.get(Singleton).then(singletonObject2 => {
+      t.deepEqual(singletonObject2, {count: 1, test: 'abc'})
 
-  let nestedContainer = container.createNestedContainer()
-  t.deepEqual(nestedContainer.get(Singleton), {count: 1, test: 'abc'})
-  t.end()
+      return container.createNestedContainer().then(nestedContainer => {
+        return nestedContainer.get(Singleton).then(singletonObject3 => {
+          t.deepEqual(singletonObject3, {count: 1, test: 'abc'})
+          t.end()
+        })
+      })
+    })
+  })
 })
 
 test('inject config into dependency constructor', t => {
@@ -143,13 +137,18 @@ test('inject config into dependency constructor', t => {
 
   let pojo = new Pojo()
 
-  pojo.add('databaseClient', c => new DatabaseClient(c.config.get('connectionString')))
+  pojo.add('databaseClient', c => {
+    return c.get('config').then(config => {
+      return new DatabaseClient(config.get('connectionString'))
+    })
+  })
 
   let container = pojo.createContainer({connectionString: connectionString})
-  let databaseClient = container.get('databaseClient')
 
-  t.equal(databaseClient.connectionString, connectionString)
-  t.end()
+  return container.get('databaseClient').then(dbClient => {
+    t.equal(dbClient.connectionString, connectionString)
+    t.end()
+  })
 })
 
 test('inject dependency into other dependencys constructor', t => {
@@ -164,13 +163,13 @@ test('inject dependency into other dependencys constructor', t => {
   let pojo = new Pojo()
 
   pojo.add('connectionString', connectionString)
-  pojo.add('databaseClient', c => new DatabaseClient(c.get('connectionString')))
+  pojo.add('databaseClient', c => c.get('connectionString').then(connStr => new DatabaseClient(connStr)))
 
   let container = pojo.createContainer({connectionString: connectionString})
-  let databaseClient = container.get('databaseClient')
-
-  t.equal(databaseClient.connectionString, connectionString)
-  t.end()
+  return container.get('databaseClient').then(dbClient => {
+    t.equal(dbClient.connectionString, connectionString)
+    t.end()
+  })
 })
 
 test('get multiple dependencies with the same name', t => {
@@ -181,9 +180,10 @@ test('get multiple dependencies with the same name', t => {
   pojo.add('number', 3)
 
   let container = pojo.createContainer()
-
-  t.deepEqual(container.getAll('number'), [1,2,3])
-  t.end()
+  return container.getAll('number').then(numbers => {
+    t.deepEqual(numbers, [1,2,3])
+    t.end()
+  })
 })
 
 test('add dependency if it doesnt exists already', t => {
@@ -193,9 +193,10 @@ test('add dependency if it doesnt exists already', t => {
   pojo.addIfNotExists('number', 2)
 
   let container = pojo.createContainer()
-
-  t.deepEqual(container.getAll('number'), [1])
-  t.end()
+  return container.getAll('number').then(numbers => {
+    t.deepEqual(numbers, [1])
+    t.end()
+  })
 })
 
 test('remove dependency', t => {
@@ -208,10 +209,11 @@ test('remove dependency', t => {
   pojo.remove('number')
 
   let container = pojo.createContainer()
-
-  t.deepEqual(container.getAll('number'), [])
-  t.deepEqual(container.getAll('letter'), ['a'])
-  t.end()
+  return Promise.all([container.getAll('number'), container.getAll('letter')]).then(([numbers, letters]) => {
+    t.deepEqual(numbers, [])
+    t.deepEqual(letters, ['a'])
+    t.end()
+  })
 })
 
 test('replace dependency', t => {
@@ -223,10 +225,11 @@ test('replace dependency', t => {
   pojo.replace('number', 3)
 
   let container = pojo.createContainer()
-
-  t.deepEqual(container.getAll('number'), [3])
-  t.deepEqual(container.getAll('letter'), ['a'])
-  t.end()
+  return Promise.all([container.getAll('number'), container.getAll('letter')]).then(([numbers, letters]) => {
+    t.deepEqual(numbers, [3])
+    t.deepEqual(letters, ['a'])
+    t.end()
+  })
 })
 
 test('each container should have unique singletons', t => {
@@ -243,12 +246,11 @@ test('each container should have unique singletons', t => {
   let container1 = pojo.createContainer()
   let container2 = pojo.createContainer()
 
-  let singleton1 = container1.get(Singleton)
-  let singleton2 = container2.get(Singleton)
-
-  t.deepEqual(container1.get(Singleton), {count: 1})
-  t.deepEqual(container2.get(Singleton), {count: 2})
-  t.end()
+  return Promise.all([container1.get(Singleton), container2.get(Singleton)]).then(([singleton1, singleton2]) => {
+    t.deepEqual(singleton1, {count: 1})
+    t.deepEqual(singleton2, {count: 2})
+    t.end()
+  })
 })
 
 test('transient dependency should be singleton in nested container', t => {
@@ -262,20 +264,28 @@ test('transient dependency should be singleton in nested container', t => {
   let pojo = new Pojo()
   pojo.addTransient(Transient)
   let container = pojo.createContainer()
-  t.deepEqual(container.get(Transient), {count: 1})
-  t.deepEqual(container.get(Transient), {count: 2})
-  let nestedContainer1 = container.createNestedContainer()
-  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
-  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
-  t.deepEqual(container.get(Transient), {count: 4})
-  t.deepEqual(nestedContainer1.get(Transient), {count: 3})
-  let nestedContainer2 = container.createNestedContainer()
-  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
-  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
-  t.deepEqual(container.get(Transient), {count: 6})
-  t.deepEqual(nestedContainer2.get(Transient), {count: 5})
-  t.throws(() => nestedContainer2.createNestedContainer())
-  t.end()
+  return Promise.all([container.get(Transient), container.get(Transient)]).then(([transient1, transient2]) => {
+    t.deepEqual(transient1, {count: 1})
+    t.deepEqual(transient2, {count: 2})
+    return container.createNestedContainer().then(nestedContainer1 => {
+      return Promise.all([nestedContainer1.get(Transient), nestedContainer1.get(Transient), container.get(Transient), nestedContainer1.get(Transient)]).then(([transient3, transient4, transient5, transient6]) => {
+        t.deepEqual(transient3, {count: 3})
+        t.deepEqual(transient4, {count: 3})
+        t.deepEqual(transient5, {count: 4})
+        t.deepEqual(transient6, {count: 3})
+
+        return container.createNestedContainer().then(nestedContainer2 => {
+          return Promise.all([nestedContainer2.get(Transient), nestedContainer2.get(Transient), container.get(Transient), nestedContainer2.get(Transient)]).then(([transient7, transient8, transient9, transient10]) => {
+            t.deepEqual(transient7, {count: 5})
+            t.deepEqual(transient8, {count: 5})
+            t.deepEqual(transient9, {count: 6})
+            t.deepEqual(transient10, {count: 5})
+            t.end()
+          })
+        })
+      })
+    })
+  })
 })
 
 test('prevent "container" for being added (reserved for current container)', t => {
@@ -287,60 +297,71 @@ test('prevent "container" for being added (reserved for current container)', t =
 test('"container" dependency should be the current container', t => {
   let pojo = new Pojo()
   let container = pojo.createContainer()
-  let reference = 'my container'
-  container.label = reference
-  let foundDep = container.get('container')
-  t.equal(foundDep.label, reference)
-  let nestedContainer = container.createNestedContainer()
-  let nestedReference = 'my nested container'
-  nestedContainer.label = nestedReference
-  let foundNestedDep = nestedContainer.get('container')
-  t.equal(foundNestedDep.label, nestedReference)
-  t.end()
+  let reference = container.label = 'my container'
+  return container.get('container').then(foundDep => {
+    t.equal(foundDep.label, reference)
+    return container.createNestedContainer().then(nestedContainer => {
+      let nestedReference = nestedContainer.label = 'my nested container'
+      return nestedContainer.get('container').then(foundNestedDep => {
+        t.equal(foundNestedDep.label, nestedReference)
+        t.end()
+      })
+    })
+  })
 })
 
 test('"config" dependency should be current containers config data', t => {
   let pojo = new Pojo()
   let config = {a:1, b:2}
   let container = pojo.createContainer(config)
-  t.deepEqual(container.get('config'), config)
-  t.end()
+  return container.get('config').then(configDep => {
+    t.deepEqual(configDep.get(), config)
+    t.end()
+  })
 })
 
 test('trying getting config should return default values', t => {
   let pojo = new Pojo()
   let config = {a:{b:2}}
-  pojo.add('conf1', c => c.config.tryOrDefault(1, 'z'))
-  pojo.add('conf2', c => c.config.tryOrDefault({c:3}, 'a'))
-  pojo.add('conf3', c => c.config.tryOrDefault({c:3}, 'b'))
+  pojo.add('conf1', c => c.get('config').then(config => config.tryOrDefault(1, 'z')))
+  pojo.add('conf2', c => c.get('config').then(config => config.tryOrDefault({c:3}, 'a')))
+  pojo.add('conf3', c => c.get('config').then(config => config.tryOrDefault({c:3}, 'b')))
   let container = pojo.createContainer(config)
-  t.equal(container.get('conf1'), 1)
-  t.deepEqual(container.get('conf2'), {b:2})
-  t.deepEqual(container.get('conf3'), {c:3})
-  t.end()
+  return Promise.all([container.get('conf1'), container.get('conf2'), container.get('conf3')]).then(([conf1, conf2, conf3]) => {
+    t.equal(conf1, 1)
+    t.deepEqual(conf2, {b:2})
+    t.deepEqual(conf3, {c:3})
+    t.end()
+  })
 })
 
 test('try getting dependency', t => {
   let pojo = new Pojo()
   pojo.add('test', c => 'test')
   let container = pojo.createContainer()
-  t.equal(container.try('bla'), undefined)
-  t.equal(container.try('test'), 'test')
-  t.end()
+  return Promise.all([container.try('bla'), container.try('test')]).then(([try1, try2]) => {
+    t.equal(try1, undefined)
+    t.equal(try2, 'test')
+    t.end()
+  })
 })
 
 test('try getting nested config', t => {
   let pojo = new Pojo()
-  pojo.add('test', c => c.config.try('a.b.c'))
+  pojo.add('test', c => c.get('config').then(config => config.try('a.b.c')))
   let container = pojo.createContainer({a: {b: {c: 123}}})
-  t.equal(container.get('test'), 123)
-  t.end()
+  return container.get('test').then(test => {
+    t.equal(test, 123)
+    t.end()
+  })
 })
 
 test('get nested config', t => {
   let pojo = new Pojo()
-  pojo.add('test', c => c.config.get('a.b.c'))
+  pojo.add('test', c => c.get('config').then(config => config.get('a.b.c')))
   let container = pojo.createContainer({a: {b: {c: 123}}})
-  t.equal(container.get('test'), 123)
-  t.end()
+  return container.get('test').then(test => {
+    t.equal(test, 123)
+    t.end()
+  })
 })

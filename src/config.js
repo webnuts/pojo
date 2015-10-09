@@ -57,6 +57,10 @@ export default class Config {
     }
   }
 
+  has(key) {
+    return walk(this.data, key) !== undefined
+  }
+
   add(data) {
     merge.recursive(this.data, data)
   }

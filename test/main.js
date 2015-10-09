@@ -416,3 +416,16 @@ test('dispose transient objects', t => {
     })
   })
 })
+
+test('check config has key', t => {
+  let pojo = new Pojo()
+  let test = 123
+  let container = pojo.createContainer({test: test})
+  return container.get('config').then(config => {
+    t.equal(config.try('test'), test)
+    t.equal(config.has('test'), true)
+    t.equal(config.try('test_not'), undefined)
+    t.equal(config.has('test_not'), false)
+    t.end()
+  })
+})

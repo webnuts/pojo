@@ -11,45 +11,39 @@ export default class Pojo {
     return new Container(this.registry.clone(), configData || {})
   }
 
-  add() {
-    let dependency = Dependency.parse.apply(null, arguments)
+  add(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'unique')
     this.registry.add(dependency)
     return this
   }
 
-  addIfNotExists() {
-    let dependency = Dependency.parse.apply(null, arguments)
+  addIfNotExists(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'unique')
     this.registry.addIfNotExists(dependency)
     return this
   }
 
-  addSingleton() {
-    let dependency = Dependency.parse.apply(null, arguments).asSingleton()
+  addSingleton(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'singleton')
     this.registry.add(dependency)
     return this
   }
 
-  addSingletonIfNotExists() {
-    let dependency = Dependency.parse.apply(null, arguments).asSingleton()
+  addSingletonIfNotExists(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'singleton')
     this.registry.addIfNotExists(dependency)
     return this
   }
 
-  addTransient() {
-    let dependency = Dependency.parse.apply(null, arguments).asTransient()
+  addTransient(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'transient')
     this.registry.add(dependency)
     return this
   }
 
-  addTransientIfNotExists() {
-    let dependency = Dependency.parse.apply(null, arguments).asTransient()
+  addTransientIfNotExists(dependencyName, factoryCandidate, disposer) {
+    let dependency = Dependency.parse(dependencyName, factoryCandidate, disposer, 'transient')
     this.registry.addIfNotExists(dependency)
-    return this
-  }
-
-  replace() {
-    let dependency = Dependency.parse.apply(null, arguments).asSingleton()
-    this.registry.replace(dependency)
     return this
   }
 

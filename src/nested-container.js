@@ -50,6 +50,10 @@ export default class NestedContainer {
       return Promise.all(container.registry.getAll(nameOrFunction).map(dependency => dependency.factory(container)))
     }).nodeify(callback)
   }
+
+  dispose() {
+    return this.registry.disposeObjects()
+  }
 }
 
 NestedContainer.prototype.trySync = deasync(NestedContainer.prototype.try)

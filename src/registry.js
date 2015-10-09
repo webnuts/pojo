@@ -1,3 +1,5 @@
+import Promise from 'bluebird'
+
 export default class Registry {
   constructor(dependencies) {
     this.dependencies = dependencies || []
@@ -28,11 +30,6 @@ export default class Registry {
     if (this.dependencies.some(dep => dep.name === dependency.name) === false) {
       this.add(dependency)
     }
-  }
-
-  replace(dependency) {
-    this.remove(dependency)
-    this.add(dependency)
   }
 
   remove(nameOrDependency) {
@@ -70,6 +67,13 @@ export default class Registry {
     } else {
       return this.dependencies.filter(dependency => dependency.name === dependencyName)
     }
+  }
+
+  disposeObjects() {
+    let disposers = this.dependencies.map(dep => dep.getDisposer())
+    return Promise.all(disposers).reduce((result, disposedObjects) => {
+      return result.concat(disposedObjects)
+    }, [])
   }
 
   clone() {

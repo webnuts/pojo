@@ -15,7 +15,7 @@ export default class Container extends NestedContainer {
         if (dep.lifecycle === 'singleton') {
           return dep
         } else if (dep.lifecycle === 'transient') {
-          return dep.clone().asSingleton()
+          return dep.clone('singleton')
         } else {
           return dep.clone()
         }

@@ -1,23 +1,12 @@
-import merge from 'merge'
+import Promise from 'bluebird'
 
 export default class Dependency {
-  static parse(...args) {
-    let name = null, factoryCandidate = null, options = {}, factory = null
-
-    if (typeof(args[0]) === 'string') {
-      name = args[0]
-      factoryCandidate = args[1]
-      options = args[2]
-    } else {
-      name = args[0].name
-      factoryCandidate = args[0]
-      options = args[1]
-    }
-
+  static parse(name, factoryCandidate, disposer, lifecycle) {
     if (name == null || name.length === 0) {
-      throw new Error('Cannot add a dependency without a name. Use a named function (class) or let the first argument be a string with the name.')
+      throw new Error('Cannot add a dependency without a name. The first argument must be a string with the name.')
     }
 
+    let factory = null
     switch(typeof(factoryCandidate)) {
       case 'function': {
         if (factoryCandidate.name.length === 0) {
@@ -39,41 +28,46 @@ export default class Dependency {
       }
     }
 
-    return new Dependency(name, factory, options)
+    return new Dependency(name, factory, disposer, lifecycle)
   }
 
-  constructor(name, baseFactory, options) {
-    this.lifecycle = 'unique'
-    merge.recursive(this, options || {})
+  constructor(name, baseFactory, disposer, lifecycle = 'unique') {
     this.name = name
     this.baseFactory = baseFactory
+    this.disposer = disposer
+    this.lifecycle = lifecycle
+    this.tracked = []
     this.factory = (function(container) {
       if (this.lifecycle === 'singleton' && this.singletonObject != null) {
         return this.singletonObject
-      // } else if (container.nested === true && this.lifecycle === 'transient' && this.transientObject != null) {
-      //   return this.transientObject
       }
       let dependencyObject = this.baseFactory(container)
+      if (typeof(this.disposer) === 'function') {
+        this.tracked.push(dependencyObject)
+      }
       if (this.lifecycle === 'singleton') {
         this.singletonObject = dependencyObject
-      // } else if (container.nested === true && this.lifecycle === 'transient') {
-      //   this.transientObject = dependencyObject
       }
       return dependencyObject
     }).bind(this)
   }
 
-  asSingleton() {
-    this.lifecycle = 'singleton'
-    return this
+  getDisposer() {
+    return Promise.try(() => {
+      let disposers = []
+      if (typeof(this.disposer) === 'function') {
+        while(this.tracked.length) {
+          disposers.push(Promise.resolve(this.tracked.pop()).then(subject => {
+            return Promise.resolve(this.disposer(subject)).thenReturn(subject)
+          }))
+        }
+        this.singletonObject = undefined
+      }
+      return Promise.all(disposers)
+    })
   }
 
-  asTransient() {
-    this.lifecycle = 'transient'
-    return this
-  }
-
-  clone() {
-    return new Dependency(this.name, this.baseFactory, {lifecycle: this.lifecycle})
+  clone(lifecycle) {
+    return new Dependency(this.name, this.baseFactory, this.disposer, lifecycle || this.lifecycle)
   }
 }

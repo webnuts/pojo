@@ -1,8 +1,9 @@
 import Promise from 'bluebird'
+import deasync from 'deasync'
 
 export default class Dependency {
-  static parse(name, factoryCandidate, disposer, lifecycle) {
-    if (name == null || name.length === 0) {
+  static parse(dependencyName, factoryCandidate, disposer, lifecycle) {
+    if (dependencyName == null || dependencyName.length === 0) {
       throw new Error('Cannot add a dependency without a name. The first argument must be a string with the name.')
     }
 
@@ -28,28 +29,39 @@ export default class Dependency {
       }
     }
 
-    return new Dependency(name, factory, disposer, lifecycle)
+    return new Dependency(dependencyName, factory, disposer, lifecycle)
   }
 
-  constructor(name, baseFactory, disposer, lifecycle = 'unique') {
-    this.name = name
+  constructor(dependencyName, baseFactory, disposer, lifecycle = 'unique') {
+    this.name = dependencyName
     this.baseFactory = baseFactory
     this.disposer = disposer
     this.lifecycle = lifecycle
     this.tracked = []
-    this.factory = (function(container) {
-      if (this.lifecycle === 'singleton' && this.singletonObject != null) {
-        return this.singletonObject
-      }
-      let dependencyObject = this.baseFactory(container)
-      if (typeof(this.disposer) === 'function') {
-        this.tracked.push(dependencyObject)
-      }
+    this.factory = Promise.method(container => {
       if (this.lifecycle === 'singleton') {
-        this.singletonObject = dependencyObject
+        if (this.singletonObject === undefined) {
+          this.singletonObject = Promise.resolve(this.baseFactory(container)).bind(this).then(dependencyObject => {
+            this.singletonObject = dependencyObject
+          })
+          let isNotResolved = (() => {
+            return (this.singletonObject || {}).constructor === Promise
+          }).bind(this)
+          deasync.loopWhile(() => isNotResolved())
+          if (typeof(this.disposer) === 'function') {
+            this.tracked.push(this.singletonObject)
+          }
+        }
+        return this.singletonObject
+      } else {
+        return Promise.resolve(this.baseFactory(container)).bind(this).then(dependencyObject => {
+          if (typeof(this.disposer) === 'function') {
+            this.tracked.push(dependencyObject)
+          }
+          return dependencyObject
+        })
       }
-      return dependencyObject
-    }).bind(this)
+    })
   }
 
   getDisposer() {

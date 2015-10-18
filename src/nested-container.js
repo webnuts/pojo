@@ -9,45 +9,63 @@ export default class NestedContainer {
     this.config = new Config(configData)
   }
 
-  try(nameOrFunction, callback) {
+  try(...dependencyNames) {
+    let callback = undefined
+    if (typeof(dependencyNames[dependencyNames.length-1]) === 'function') {
+      callback = dependencyNames.pop()
+    }
     let container = this
-    return Promise.try(() => {
-      if (nameOrFunction === 'container') {
+    return Promise.all(dependencyNames.map(dependencyName => {
+      if (dependencyName === 'container') {
         return container
       }
-      if (nameOrFunction === 'config') {
+      if (dependencyName === 'config') {
         return container.config
       }
-      let dependency = container.registry.try(nameOrFunction)
+      let dependency = container.registry.try(dependencyName)
       if (dependency) {
         return dependency.factory(container)
       }
+    })).then(dependencyObjects => {
+      if (dependencyNames.length === 1) {
+        return dependencyObjects[0]
+      }
+      return dependencyObjects
     }).nodeify(callback)
   }
 
-  get(nameOrFunction, callback) {
+  get(...dependencyNames) {
+    let callback = undefined
+    if (typeof(dependencyNames[dependencyNames.length-1]) === 'function') {
+      callback = dependencyNames.pop()
+    }
     let container = this
-    return Promise.try(() => {
-      if (nameOrFunction === 'container') {
+    return Promise.all(dependencyNames.map(dependencyName => {
+      if (dependencyName === 'container') {
         return container
       }
-      if (nameOrFunction === 'config') {
+      if (dependencyName === 'config') {
         return container.config
       }
-      return container.registry.get(nameOrFunction).factory(container)
+      return container.registry.get(dependencyName).factory(container)
+    })).then(dependencyObjects => {
+      if (dependencyNames.length === 1) {
+        return dependencyObjects[0]
+      }
+      return dependencyObjects
     }).nodeify(callback)
   }
 
-  getAll(nameOrFunction, callback) {
+  getAll(dependencyName, callback) {
     let container = this
     return Promise.try(() => {
-      if (nameOrFunction === 'container') {
+      if (dependencyName === 'container') {
         return [container]
       }
-      if (nameOrFunction === 'config') {
+      if (dependencyName === 'config') {
         return [container.config]
       }
-      return Promise.all(container.registry.getAll(nameOrFunction).map(dependency => dependency.factory(container)))
+      return Promise.all(container.registry.getAll(dependencyName).map(dependency => dependency.factory(container)))
     }).nodeify(callback)
   }
 

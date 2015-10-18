@@ -5,20 +5,6 @@ export default class Registry {
     this.dependencies = dependencies || []
   }
 
-  getDependencyName(nameOrFunction) {
-    switch(typeof(nameOrFunction)) {
-      case 'function': {
-        return nameOrFunction.name
-      }
-      case 'string': {
-        return nameOrFunction
-      }
-      default: {
-        return undefined
-      }
-    }
-  }
-
   add(dependency) {
     if (dependency.name === 'container' || dependency.name === 'config') {
       throw new Error('"' + dependency.name + '" is reserved and already available as dependencies.')
@@ -32,8 +18,7 @@ export default class Registry {
     }
   }
 
-  remove(nameOrDependency) {
-    let dependencyName = typeof(nameOrDependency) === 'string' ? nameOrDependency : nameOrDependency.name
+  remove(dependencyName) {
     let lastIndex = this.dependencies.length - 1
     for(let index = lastIndex; 0 <= index; index--) {
       if (this.dependencies[index].name === dependencyName) {
@@ -42,8 +27,7 @@ export default class Registry {
     }
   }
 
-  try(nameOrFunction) {
-    let dependencyName = this.getDependencyName(nameOrFunction)
+  try(dependencyName) {
     let matchingDependencies = this.getAll(dependencyName)
     if (1 < matchingDependencies.length) {
       throw new Error('Multiple dependencies exists with name "' + dependencyName + '".')
@@ -51,8 +35,7 @@ export default class Registry {
     return matchingDependencies[0]
   }
 
-  get(nameOrFunction) {
-    let dependencyName = this.getDependencyName(nameOrFunction)
+  get(dependencyName) {
     let dependency = this.try(dependencyName)
     if (dependency === undefined) {
       throw new Error('No dependency exists with name "' + dependencyName + "'.")
@@ -60,8 +43,7 @@ export default class Registry {
     return dependency
   }
 
-  getAll(nameOrFunction) {
-    let dependencyName = this.getDependencyName(nameOrFunction)
+  getAll(dependencyName) {
     if (dependencyName === undefined) {
       return this.dependencies.slice()
     } else {

@@ -365,7 +365,7 @@ test('dispose unique objects', t => {
   })
 })
 
-test('dispose singleton objects', t => {
+test.only('dispose singleton objects', t => {
   let pojo = new Pojo()
   let disposed = []
   let count = 1
@@ -426,6 +426,39 @@ test('check config has key', t => {
     t.equal(config.has('test'), true)
     t.equal(config.try('test_not'), undefined)
     t.equal(config.has('test_not'), false)
+    t.end()
+  })
+})
+
+test('resolve a promise dependency', t => {
+  let pojo = new Pojo()
+  let test = 123
+  pojo.add('test', c => Promise.resolve(test))
+  let container = pojo.createContainer()
+  return container.get('test').then(result => {
+    t.equal(result, test)
+    t.end()
+  })
+})
+
+test('get multiple dependencies', t => {
+  let pojo = new Pojo()
+  pojo.add('a', 1)
+  pojo.add('b', 2)
+  let container = pojo.createContainer()
+  return container.get('a', 'b').then(result => {
+    t.deepEqual(result, [1, 2])
+    t.end()
+  })
+})
+
+test('try getting multiple dependencies', t => {
+  let pojo = new Pojo()
+  pojo.add('a', 1)
+  pojo.add('b', 2)
+  let container = pojo.createContainer()
+  return container.try('a', 'b', 'c').then(result => {
+    t.deepEqual(result, [1, 2, undefined])
     t.end()
   })
 })

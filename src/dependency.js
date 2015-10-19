@@ -54,6 +54,7 @@ export default class Dependency {
         let getSingletonObject = () => {
           return Promise.resolve(dependency.singletonState).then(state => {
             if (state === 'created') {
+              getSingletonObject = () => dependency.singletonObject
               return dependency.singletonObject
             } else {
               return Promise.delay(1).then(() => getSingletonObject())

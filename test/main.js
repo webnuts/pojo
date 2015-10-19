@@ -205,7 +205,7 @@ test('remove dependency', t => {
   pojo.remove('number')
 
   let container = pojo.createContainer()
-  return Promise.all([container.getAll('number'), container.getAll('letter')]).then(([numbers, letters]) => {
+  return container.getAll('number', 'letter').then(([numbers, letters]) => {
     t.deepEqual(numbers, [])
     t.deepEqual(letters, ['a'])
     t.end()
@@ -302,7 +302,7 @@ test('trying getting config should return default values', t => {
   pojo.add('conf2', c => c.get('config').then(config => config.tryOrDefault({c:3}, 'a')))
   pojo.add('conf3', c => c.get('config').then(config => config.tryOrDefault({c:3}, 'b')))
   let container = pojo.createContainer(config)
-  return Promise.all([container.get('conf1'), container.get('conf2'), container.get('conf3')]).then(([conf1, conf2, conf3]) => {
+  return container.get('conf1', 'conf2', 'conf3').then(([conf1, conf2, conf3]) => {
     t.equal(conf1, 1)
     t.deepEqual(conf2, {b:2})
     t.deepEqual(conf3, {c:3})
@@ -314,7 +314,7 @@ test('try getting dependency', t => {
   let pojo = new Pojo()
   pojo.add('test', c => 'test')
   let container = pojo.createContainer()
-  return Promise.all([container.try('bla'), container.try('test')]).then(([try1, try2]) => {
+  return container.try('bla', 'test').then(([try1, try2]) => {
     t.equal(try1, undefined)
     t.equal(try2, 'test')
     t.end()
@@ -369,7 +369,7 @@ test('dispose singleton objects', t => {
   pojo.addSingleton('number', c => count++, n => disposed.push(n))
 
   let container = pojo.createContainer()
-  return Promise.all([container.getAll('number'), container.getAll('number')]).then(([numbers1, numbers2]) => {
+  return container.getAll('number', 'number').then(([numbers1, numbers2]) => {
     t.deepEqual(numbers1, [1,2])
     t.deepEqual(numbers2, [1,2])
     return container.dispose().then(disposedObjects => {
@@ -391,11 +391,11 @@ test('dispose transient objects', t => {
   pojo.addTransient('number', c => count++, n => disposed.push(n))
 
   let container = pojo.createContainer()
-  return Promise.all([container.getAll('number'), container.getAll('number')]).then(([numbers1, numbers2]) => {
+  return container.getAll('number', 'number').then(([numbers1, numbers2]) => {
     t.deepEqual(numbers1, [1,2])
     t.deepEqual(numbers2, [3,4])
     return container.createNestedContainer().then(nested => {
-      return Promise.all([nested.getAll('number'), nested.getAll('number')]).then(([numbers3, numbers4]) => {
+      return nested.getAll('number', 'number').then(([numbers3, numbers4]) => {
         t.deepEqual(numbers3, [5,6])
         t.deepEqual(numbers4, [5,6])
         return Promise.all([container.dispose(), nested.dispose()]).then(([disposedObjects1, disposedObjects2]) => {

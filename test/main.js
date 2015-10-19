@@ -244,22 +244,17 @@ test('transient dependency should be singleton in nested container', t => {
   let pojo = new Pojo()
   pojo.addTransient('transient', c => new Transient())
   let container = pojo.createContainer()
-  return Promise.all([container.get('transient'), container.get('transient')]).then(([transient1, transient2]) => {
+  return container.get('transient', 'transient').then(([transient1, transient2]) => {
     t.deepEqual(transient1, {count: 1})
     t.deepEqual(transient2, {count: 2})
     return container.createNestedContainer().then(nestedContainer1 => {
-      return Promise.all([nestedContainer1.get('transient'), nestedContainer1.get('transient'), container.get('transient'), nestedContainer1.get('transient')]).then(([transient3, transient4, transient5, transient6]) => {
+      return nestedContainer1.get('transient', 'transient').then(([transient3, transient4]) => {
         t.deepEqual(transient3, {count: 3})
         t.deepEqual(transient4, {count: 3})
-        t.deepEqual(transient5, {count: 4})
-        t.deepEqual(transient6, {count: 3})
-
         return container.createNestedContainer().then(nestedContainer2 => {
-          return Promise.all([nestedContainer2.get('transient'), nestedContainer2.get('transient'), container.get('transient'), nestedContainer2.get('transient')]).then(([transient7, transient8, transient9, transient10]) => {
-            t.deepEqual(transient7, {count: 5})
-            t.deepEqual(transient8, {count: 5})
-            t.deepEqual(transient9, {count: 6})
-            t.deepEqual(transient10, {count: 5})
+          return nestedContainer2.get('transient', 'transient').then(([transient7, transient8]) => {
+            t.deepEqual(transient7, {count: 4})
+            t.deepEqual(transient8, {count: 4})
             t.end()
           })
         })
@@ -365,7 +360,7 @@ test('dispose unique objects', t => {
   })
 })
 
-test.only('dispose singleton objects', t => {
+test('dispose singleton objects', t => {
   let pojo = new Pojo()
   let disposed = []
   let count = 1

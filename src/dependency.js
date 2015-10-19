@@ -39,24 +39,32 @@ export default class Dependency {
     this.lifecycle = lifecycle
     this.tracked = []
     this.factory = Promise.method(container => {
-      if (this.lifecycle === 'singleton') {
-        if (this.singletonObject === undefined) {
-          this.singletonObject = Promise.resolve(this.baseFactory(container)).bind(this).then(dependencyObject => {
-            this.singletonObject = dependencyObject
+      let dependency = this
+      if (dependency.lifecycle === 'singleton') {
+        if (dependency.singletonState === undefined) {
+          dependency.singletonState = 'initialized'
+          Promise.resolve(dependency.baseFactory(container)).then(dependencyObject => {
+            dependency.singletonObject = dependencyObject
+            if (typeof(dependency.disposer) === 'function') {
+              dependency.tracked.push(dependency.singletonObject)
+            }
+            dependency.singletonState = 'created'
           })
-          let isNotResolved = (() => {
-            return (this.singletonObject || {}).constructor === Promise
-          }).bind(this)
-          deasync.loopWhile(() => isNotResolved())
-          if (typeof(this.disposer) === 'function') {
-            this.tracked.push(this.singletonObject)
-          }
         }
-        return this.singletonObject
+        let getSingletonObject = () => {
+          return Promise.resolve(dependency.singletonState).then(state => {
+            if (state === 'created') {
+              return dependency.singletonObject
+            } else {
+              return Promise.delay(1).then(() => getSingletonObject())
+            }
+          })
+        }
+        return getSingletonObject()
       } else {
-        return Promise.resolve(this.baseFactory(container)).bind(this).then(dependencyObject => {
-          if (typeof(this.disposer) === 'function') {
-            this.tracked.push(dependencyObject)
+        return Promise.resolve(dependency.baseFactory(container)).then(dependencyObject => {
+          if (typeof(dependency.disposer) === 'function') {
+            dependency.tracked.push(dependencyObject)
           }
           return dependencyObject
         })

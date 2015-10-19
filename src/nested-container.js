@@ -56,9 +56,14 @@ export default class NestedContainer {
     }).nodeify(callback)
   }
 
-  getAll(dependencyName, callback) {
+  getAll(...dependencyNames) {
+    let callback = undefined
+    if (typeof(dependencyNames[dependencyNames.length-1]) === 'function') {
+      callback = dependencyNames.pop()
+    }
+
     let container = this
-    return Promise.try(() => {
+    return Promise.all(dependencyNames.map(dependencyName => {
       if (dependencyName === 'container') {
         return [container]
       }
@@ -66,6 +71,11 @@ export default class NestedContainer {
         return [container.config]
       }
       return Promise.all(container.registry.getAll(dependencyName).map(dependency => dependency.factory(container)))
+    })).then(dependencyObjects => {
+      if (dependencyNames.length === 1) {
+        return dependencyObjects[0]
+      }
+      return dependencyObjects
     }).nodeify(callback)
   }
 
